@@ -1,0 +1,46 @@
+@host = http://localhost:5003
+@taskId = 00000000-0000-0000-0000-000000000001
+
+### Create a task (201, priority defaults to Medium)
+POST {{host}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Buy milk"
+}
+
+### Create a high-priority task (201)
+POST {{host}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Prepare for interview",
+  "priority": "High"
+}
+
+### Get all tasks (200)
+GET {{host}}/tasks
+Accept: application/json
+
+### Invalid title (400)
+POST {{host}}/tasks
+Content-Type: application/json
+
+{
+  "title": "   "
+}
+
+### Invalid priority (400)
+POST {{host}}/tasks
+Content-Type: application/json
+
+{
+  "title": "Test task",
+  "priority": 99
+}
+
+### Delete a task (204 or 404); replace taskId with an existing task ID
+DELETE {{host}}/tasks/{{taskId}}
+
+### Invalid GUID (404 due to route constraint {id:guid})
+DELETE {{host}}/tasks/not-a-guid
