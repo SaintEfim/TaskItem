@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace TaskApi.Models;
 
 public class TaskItem
@@ -19,6 +21,7 @@ public class TaskItem
 
     public Priority Priority { get; private set; }
 
+    [JsonIgnore]
     public uint RowVersion { get; private set; }
 
     private TaskItem(
