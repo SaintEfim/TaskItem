@@ -19,6 +19,8 @@ public class TaskItem
 
     public Priority Priority { get; private set; }
 
+    public uint RowVersion { get; private set; }
+
     private TaskItem(
         string title,
         Priority priority)
