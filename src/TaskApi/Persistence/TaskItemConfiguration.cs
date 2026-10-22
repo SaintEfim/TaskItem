@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using TaskApi.Models;
 
-namespace TaskApi.Persistence.Configurations;
+namespace TaskApi.Persistence;
 
 public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 {
