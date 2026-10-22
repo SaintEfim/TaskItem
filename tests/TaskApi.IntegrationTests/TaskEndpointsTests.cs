@@ -38,7 +38,8 @@ public class TaskEndpointsTests : IAsyncLifetime
         _client = _factory.CreateClient();
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<TaskDbContext>();
-        Assert.Equal(_databaseName, db.Database.GetDbConnection().Database);
+        Assert.Equal(_databaseName, db.Database.GetDbConnection()
+            .Database);
         await db.Database.MigrateAsync();
     }
 
@@ -51,7 +52,8 @@ public class TaskEndpointsTests : IAsyncLifetime
             {
                 await using var scope = _factory.Services.CreateAsyncScope();
                 var db = scope.ServiceProvider.GetRequiredService<TaskDbContext>();
-                Assert.Equal(_databaseName, db.Database.GetDbConnection().Database);
+                Assert.Equal(_databaseName, db.Database.GetDbConnection()
+                    .Database);
                 await db.Database.EnsureDeletedAsync();
             }
         }
@@ -72,17 +74,24 @@ public class TaskEndpointsTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var task = await response.Content.ReadFromJsonAsync<JsonElement>();
-        var id = task.GetProperty("id").GetGuid();
+        var id = task.GetProperty("id")
+            .GetGuid();
         Assert.NotEqual(Guid.Empty, id);
-        Assert.Equal("Buy milk", task.GetProperty("title").GetString());
-        Assert.Equal("High", task.GetProperty("priority").GetString());
-        Assert.False(task.GetProperty("isCompleted").GetBoolean());
-        Assert.Equal(JsonValueKind.Null, task.GetProperty("completedAt").ValueKind);
+        Assert.Equal("Buy milk", task.GetProperty("title")
+            .GetString());
+        Assert.Equal("High", task.GetProperty("priority")
+            .GetString());
+        Assert.False(task.GetProperty("isCompleted")
+            .GetBoolean());
+        Assert.Equal(JsonValueKind.Null, task.GetProperty("completedAt")
+            .ValueKind);
         Assert.False(task.TryGetProperty("rowVersion", out _));
 
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<TaskDbContext>();
-        var saved = await db.Tasks.AsNoTracking().SingleAsync(x => x.Id == id);
+        var saved = await db.Tasks
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == id);
         Assert.Equal("Buy milk", saved.Title);
         Assert.Equal(Priority.High, saved.Priority);
         Assert.False(saved.IsCompleted);
@@ -95,16 +104,17 @@ public class TaskEndpointsTests : IAsyncLifetime
         var created = await _client.PostAsJsonAsync("/tasks", new { title = "Read book" });
         created.EnsureSuccessStatusCode();
         var task = await created.Content.ReadFromJsonAsync<JsonElement>();
-        var id = task.GetProperty("id").GetGuid();
+        var id = task.GetProperty("id")
+            .GetGuid();
 
         var response = await _client.GetAsync("/tasks");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var tasks = await response.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Contains(tasks.EnumerateArray(), x =>
-            x.GetProperty("id").GetGuid() == id
-            && x.GetProperty("title").GetString() == "Read book"
-            && x.GetProperty("priority").GetString() == "Medium");
+        Assert.Contains(tasks.EnumerateArray(), x => x.GetProperty("id")
+            .GetGuid() == id && x.GetProperty("title")
+            .GetString() == "Read book" && x.GetProperty("priority")
+            .GetString() == "Medium");
     }
 
     [Fact]
@@ -113,7 +123,8 @@ public class TaskEndpointsTests : IAsyncLifetime
         var created = await _client.PostAsJsonAsync("/tasks", new { title = "Delete me" });
         created.EnsureSuccessStatusCode();
         var task = await created.Content.ReadFromJsonAsync<JsonElement>();
-        var id = task.GetProperty("id").GetGuid();
+        var id = task.GetProperty("id")
+            .GetGuid();
 
         var response = await _client.DeleteAsync($"/tasks/{id}");
 

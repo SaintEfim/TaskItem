@@ -9,6 +9,16 @@ public class TaskItem
     {
     }
 
+    private TaskItem(
+        string title,
+        Priority priority)
+    {
+        Id = Guid.NewGuid();
+        Title = title;
+        CreatedAt = DateTimeOffset.UtcNow;
+        Priority = priority;
+    }
+
     public Guid Id { get; private set; }
 
     public string Title { get; private set; } = null!;
@@ -23,16 +33,6 @@ public class TaskItem
 
     [JsonIgnore]
     public uint RowVersion { get; private set; }
-
-    private TaskItem(
-        string title,
-        Priority priority)
-    {
-        Id = Guid.NewGuid();
-        Title = title;
-        CreatedAt = DateTimeOffset.UtcNow;
-        Priority = priority;
-    }
 
     public static TaskItem Create(
         string title,

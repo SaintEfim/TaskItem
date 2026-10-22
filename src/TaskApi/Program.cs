@@ -1,8 +1,8 @@
-using TaskApi.Messaging;
 using System.Text.Json.Serialization;
-using TaskApi.Endpoints;
 using Sieve.Models;
 using Sieve.Services;
+using TaskApi.Endpoints;
+using TaskApi.Messaging;
 using TaskApi.Models;
 using TaskApi.Persistence;
 

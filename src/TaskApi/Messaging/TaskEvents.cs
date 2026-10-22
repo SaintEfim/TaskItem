@@ -8,8 +8,35 @@ public sealed class TaskEvents(ILogger<TaskEvents> logger) : IHostedService
     private readonly SemaphoreSlim _publishing = new(1, 1);
     private volatile bool _stopping;
 
+    public Task StartAsync(
+        CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    public async Task StopAsync(
+        CancellationToken cancellationToken)
+    {
+        _stopping = true;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(5));
+
+        try
+        {
+            await _publishing.WaitAsync(timeout.Token);
+            _publishing.Release();
+
+            // TODO: close the RabbitMQ channel, then the connection, using timeout.Token.
+        }
+        catch (OperationCanceledException)
+        {
+            logger.LogWarning("RabbitMQ shutdown was cancelled or reached its 5-second limit.");
+        }
+    }
+
     // Call after the completed task has been saved with SaveChangesAsync.
-    public async Task PublishCompletedAsync(TaskItem task)
+    public async Task PublishCompletedAsync(
+        TaskItem task)
     {
         var message = JsonSerializer.Serialize(new
         {
@@ -34,27 +61,6 @@ public sealed class TaskEvents(ILogger<TaskEvents> logger) : IHostedService
         finally
         {
             _publishing.Release();
-        }
-    }
-
-    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-    public async Task StopAsync(CancellationToken cancellationToken)
-    {
-        _stopping = true;
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(5));
-
-        try
-        {
-            await _publishing.WaitAsync(timeout.Token);
-            _publishing.Release();
-
-            // TODO: close the RabbitMQ channel, then the connection, using timeout.Token.
-        }
-        catch (OperationCanceledException)
-        {
-            logger.LogWarning("RabbitMQ shutdown was cancelled or reached its 5-second limit.");
         }
     }
 }
