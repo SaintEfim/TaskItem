@@ -3,7 +3,8 @@ using TaskApi.Models;
 
 namespace TaskApi.Messaging;
 
-public sealed class TaskEvents(ILogger<TaskEvents> logger) : IHostedService
+public sealed class TaskEvents(ILogger<TaskEvents> logger) : ITaskEvents,
+    IHostedService
 {
     private readonly SemaphoreSlim _publishing = new(1, 1);
     private volatile bool _stopping;

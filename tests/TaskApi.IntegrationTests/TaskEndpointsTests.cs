@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using TaskApi.Messaging;
 using TaskApi.Models;
 using TaskApi.Persistence;
 using Xunit;
@@ -30,6 +31,9 @@ public class TaskEndpointsTests : IAsyncLifetime
                 services.RemoveAll<DbContextOptions<TaskDbContext>>();
                 services.RemoveAll<IDbContextOptionsConfiguration<TaskDbContext>>();
                 services.AddDbContext<TaskDbContext>(options => options.UseNpgsql(connectionString));
+                services.RemoveAll<ITaskEvents>();
+                services.AddSingleton<FakeTaskEvents>();
+                services.AddSingleton<ITaskEvents>(provider => provider.GetRequiredService<FakeTaskEvents>());
             }));
     }
 
@@ -134,5 +138,46 @@ public class TaskEndpointsTests : IAsyncLifetime
         Assert.False(await db.Tasks.AnyAsync(x => x.Id == id));
     }
 
-    // TODO: test create -> complete -> publish when the completion endpoint and publisher are implemented.
+    [Fact]
+    public async Task CreateAndCompleteTask_SavesCompletionAndPublishesEvent()
+    {
+        var created = await _client.PostAsJsonAsync("/tasks", new
+        {
+            title = "Finish assignment",
+            priority = "High"
+        });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var task = await created.Content.ReadFromJsonAsync<JsonElement>();
+        var id = task.GetProperty("id").GetGuid();
+        var publisher = _factory.Services.GetRequiredService<FakeTaskEvents>();
+        Assert.Empty(publisher.PublishedTasks);
+
+        var completed = await _client.PutAsync($"/tasks/{id}/complete", null);
+
+        Assert.Equal(HttpStatusCode.OK, completed.StatusCode);
+        var result = await completed.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(result.GetProperty("isCompleted").GetBoolean());
+        var published = Assert.Single(publisher.PublishedTasks);
+        Assert.Equal(id, published.Id);
+        Assert.Equal("Finish assignment", published.Title);
+        Assert.Equal(Priority.High, published.Priority);
+        Assert.Equal(result.GetProperty("completedAt").GetDateTimeOffset(), published.CompletedAt);
+    }
+
+    private sealed class FakeTaskEvents(IServiceScopeFactory scopeFactory) : ITaskEvents
+    {
+        public List<TaskItem> PublishedTasks { get; } = [];
+
+        public async Task PublishCompletedAsync(TaskItem task)
+        {
+            // A separate context verifies that completion was committed before publication.
+            await using var scope = scopeFactory.CreateAsyncScope();
+            var db = scope.ServiceProvider.GetRequiredService<TaskDbContext>();
+            var saved = await db.Tasks.AsNoTracking().SingleAsync(x => x.Id == task.Id);
+            Assert.True(saved.IsCompleted);
+            Assert.NotNull(saved.CompletedAt);
+
+            PublishedTasks.Add(task);
+        }
+    }
 }

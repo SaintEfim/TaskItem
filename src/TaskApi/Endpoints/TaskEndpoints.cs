@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sieve.Models;
 using Sieve.Services;
+using TaskApi.Messaging;
 using TaskApi.Models;
 using TaskApi.Persistence;
 
@@ -58,6 +59,46 @@ public static class TaskEndpoints
                 .ToListAsync(ct);
 
             return Results.Ok(result);
+        });
+
+        tasks.MapPut("/{id:guid}/complete", async (
+            Guid id,
+            TaskDbContext db,
+            ITaskEvents events,
+            ILogger<TaskEvents> logger,
+            CancellationToken ct) =>
+        {
+            var task = await db.Tasks.FindAsync([id], ct);
+            if (task is null)
+            {
+                return Results.NotFound();
+            }
+
+            if (task.IsCompleted)
+            {
+                return Results.Conflict();
+            }
+
+            task.Completed();
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Results.Conflict();
+            }
+
+            try
+            {
+                await events.PublishCompletedAsync(task);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Task {TaskId} was completed, but its event could not be published.", id);
+            }
+
+            return Results.Ok(task);
         });
 
         tasks.MapDelete("/{id:guid}", async (

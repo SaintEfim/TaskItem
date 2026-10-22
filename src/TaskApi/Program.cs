@@ -9,6 +9,7 @@ using TaskApi.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddSingleton<TaskEvents>();
+builder.Services.AddSingleton<ITaskEvents>(services => services.GetRequiredService<TaskEvents>());
 builder.Services.AddHostedService(services => services.GetRequiredService<TaskEvents>());
 builder.Services.Configure<HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(5));
 builder.Services.AddProblemDetails();
