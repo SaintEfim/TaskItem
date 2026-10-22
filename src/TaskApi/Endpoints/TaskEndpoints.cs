@@ -54,8 +54,7 @@ public static class TaskEndpoints
                 .OrderBy(x => x.CreatedAt)
                 .ThenBy(x => x.Id);
 
-            var result = await sieve
-                .Apply(model, query)
+            var result = await sieve.Apply(model, query)
                 .ToListAsync(ct);
 
             return Results.Ok(result);
