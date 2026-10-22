@@ -1,6 +1,8 @@
 using TaskApi.Messaging;
 using System.Text.Json.Serialization;
 using TaskApi.Endpoints;
+using Sieve.Models;
+using Sieve.Services;
 using TaskApi.Models;
 using TaskApi.Persistence;
 
@@ -14,6 +16,14 @@ builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadReq
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter<Priority>()));
 
+builder.Services.Configure<SieveOptions>(options =>
+{
+    options.DefaultPageSize = 10;
+    options.MaxPageSize = 100;
+});
+
+builder.Services.AddScoped<ISieveProcessor, SieveProcessor>();
+
 var app = builder.Build();
 
 app.UseExceptionHandler();
@@ -22,3 +32,7 @@ app.UseStatusCodePages();
 app.MapTaskEndpoints();
 
 app.Run();
+
+public partial class Program
+{
+}
