@@ -1,3 +1,4 @@
+
 @host = http://localhost:5003
 @taskId = 00000000-0000-0000-0000-000000000001
 
@@ -18,8 +19,28 @@ Content-Type: application/json
   "priority": "High"
 }
 
-### Get all tasks (200)
+### Get tasks - default pagination (200)
 GET {{host}}/tasks
+Accept: application/json
+
+### Get first page (200)
+GET {{host}}/tasks?page=1&pageSize=5
+Accept: application/json
+
+### Get second page (200)
+GET {{host}}/tasks?page=2&pageSize=5
+Accept: application/json
+
+### Get tasks with page size 10 (200)
+GET {{host}}/tasks?page=1&pageSize=10
+Accept: application/json
+
+### Get tasks with invalid pagination values (200, defaults applied)
+GET {{host}}/tasks?page=-1&pageSize=0
+Accept: application/json
+
+### Get empty page (200, empty array expected if no records)
+GET {{host}}/tasks?page=999&pageSize=10
 Accept: application/json
 
 ### Invalid title (400)
@@ -30,7 +51,7 @@ Content-Type: application/json
   "title": "   "
 }
 
-### Invalid priority (400)
+### Invalid priority (400 if numeric enum values are disabled)
 POST {{host}}/tasks
 Content-Type: application/json
 
@@ -39,8 +60,8 @@ Content-Type: application/json
   "priority": 99
 }
 
-### Delete a task (204 or 404); replace taskId with an existing task ID
+### Delete a task (204 or 404)
 DELETE {{host}}/tasks/{{taskId}}
 
-### Invalid GUID (404 due to route constraint {id:guid})
+### Invalid GUID (404 due to route constraint)
 DELETE {{host}}/tasks/not-a-guid
