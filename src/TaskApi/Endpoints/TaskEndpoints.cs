@@ -1,4 +1,7 @@
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Sieve.Models;
+using Sieve.Services;
 using TaskApi.Models;
 using TaskApi.Persistence;
 
@@ -34,10 +37,29 @@ public static class TaskEndpoints
         });
 
         tasks.MapGet("", async (
+            [FromQuery] int? page,
+            [FromQuery] int? pageSize,
             TaskDbContext db,
-            CancellationToken ct) => Results.Ok(await db.Tasks
-            .AsNoTracking()
-            .ToListAsync(ct)));
+            ISieveProcessor sieve,
+            CancellationToken ct) =>
+        {
+            var model = new SieveModel
+            {
+                Page = page is > 0 ? page.Value : 1,
+                PageSize = pageSize is > 0 ? pageSize.Value : 10
+            };
+
+            var query = db.Tasks
+                .AsNoTracking()
+                .OrderBy(x => x.CreatedAt)
+                .ThenBy(x => x.Id);
+
+            var result = await sieve
+                .Apply(model, query)
+                .ToListAsync(ct);
+
+            return Results.Ok(result);
+        });
 
         tasks.MapDelete("/{id:guid}", async (
             Guid id,
